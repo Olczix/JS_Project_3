@@ -11,26 +11,26 @@ class Screen(QWidget):
         self.setLayout(self.layout)
         self.create_menu()
         
-    def show_current_weather(self, temp, min_temp, max_temp, feels_like, main_weather, 
-        weather_description, clouds, wind_speed, pressure, humidity):
+    def show_current_weather(self, weather_obj):
         main_info = QLabel()
-        main_info.setText(f"Aktualna pogoda dla miasta {get_city_from_file().upper()}:\n\n"
-            f"Ogólne warunki: {main_weather} ({weather_description})\n\n"
-            f"Zachmurzenie wynosi {clouds}%\n"
-            f"Aktualna temperatura wynosi {temp}\u00b0C (odczuwalne {feels_like}\u00b0C)\n"
-            f"Temperatura waha się od {min_temp}\u00b0C do {max_temp}\u00b0C\n"
-            f"Wiatr osiąga prędkość {wind_speed}m/s ({convert_wind_speed(wind_speed)}km/h)\n"
-            f"Ciśnienie jest równe {pressure} hPa\n"
-            f"Wilgotność powietrza wynosi {humidity}%\n")
+        main_info.setText(
+            f"Aktualna pogoda dla miasta {get_city_from_file().upper()}:\n\n"
+            f"Ogólne warunki: {weather_obj.main_weather} ({weather_obj.weather_description})\n\n"
+            f"Zachmurzenie wynosi {weather_obj.clouds}%\n"
+            f"Aktualna temperatura wynosi {weather_obj.temp}\u00b0C (odczuwalne {weather_obj.feels_like}\u00b0C)\n"
+            f"Wiatr osiąga prędkość {weather_obj.wind_speed}m/s ({weather_obj.wind_speed_converted}km/h)\n"
+            f"Ciśnienie jest równe {weather_obj.pressure} hPa\n"
+            f"Wilgotność powietrza wynosi {weather_obj.humidity}%\n"
+            f"\nOstatnia aktualizacja: {weather_obj.time}")
         self.layout.addWidget(main_info)
 
     def weather_trigger(self, q):
-        temp, min_temp, max_temp, feels_like, main_weather, \
-            weather_description, clouds, wind_speed, pressure, \
-            humidity = get_weather_trigger(q)
-        self.show_current_weather(temp, min_temp, max_temp,
-            feels_like, main_weather, weather_description, 
-            clouds, wind_speed, pressure, humidity)
+        if q.text() == "Aktualna pogoda":
+            current_weather_obj = get_current_weather_obj()
+            self.show_current_weather(current_weather_obj)
+        elif q.text() == "Pogoda na 24h":
+            hourly_weather_list = get_hourly_weather_list()
+            start_gtk_app(hourly_weather_list[2:26], get_city_from_file())
     
     def create_menu(self):
         menu_bar = QMenuBar()
@@ -40,7 +40,7 @@ class Screen(QWidget):
         weather = menu_bar.addMenu("Pogoda")
         action_current_weather = QAction("Aktualna pogoda", self)
         weather.addAction(action_current_weather)
-        action_future_weather = QAction("Pogoda na 3 dni", self)
+        action_future_weather = QAction("Pogoda na 24h", self)
         weather.addAction(action_future_weather)
         weather.triggered[QAction].connect(self.weather_trigger)
 
@@ -48,6 +48,7 @@ class Screen(QWidget):
         change_city = menu_bar.addMenu("Zmień miasto")
         action_change_city = QAction("Podaj nazwę miasta", self)
         change_city.addAction(action_change_city)
+        # TODO: Add handling adding new city, changing current
         change_city.triggered[QAction].connect(start_gtk_app)
 
         # Third button in menu
